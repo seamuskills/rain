@@ -10,6 +10,8 @@ sc = pygame.display.set_mode(screenSize, flags=pygame.DOUBLEBUF | pygame.RESIZAB
 ds = pygame.Surface(screenSize)
 c = pygame.time.Clock()
 
+font = pygame.font.SysFont("arial", 24, False, False)
+
 #controls
 # e to export
 # n for new
@@ -83,6 +85,7 @@ configDone = False
 def config():
     global properties
     global configDone
+    global camera
     configDone = False
     top = tkinter.Tk()
 
@@ -108,6 +111,7 @@ def config():
     done.pack()
 
     top.mainloop()
+    camera = pygame.Vector2(-8, -50)
     print("[properties set: {}]".format(properties))
 
 def setWidth(P):
@@ -160,6 +164,14 @@ def exp(): #export the level
     data["properties"] = properties
     return data #return finished data
 
+def resizeLevel():
+    global ds
+    if ds.get_size() != properties["size"]:
+        ds = pygame.transform.scale(ds, properties["size"])
+        for i in objects:
+            if not pygame.Rect(i["pos"][0], i["pos"][1], i["width"], i["height"]).colliderect((0, 0, ds.get_size()[0], ds.get_size()[1])):
+                objects.remove(i)
+
 while True:
     dt = c.tick(60) / 1000
     for event in pygame.event.get():
@@ -167,8 +179,8 @@ while True:
             exit()
 
         if event.type == pygame.WINDOWRESIZED:
-            ui.set_window_resolution(ds.get_size())
-            screenSize = ds.get_size()
+            ui.set_window_resolution(sc.get_size())
+            screenSize = sc.get_size()
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_e:
@@ -229,15 +241,19 @@ while True:
                 match selectedItem:
                     case "player":
                         player = pygame.Vector2(selPos[0], selPos[1])
+                        print("[placed player at {}]".format(str(player)))
                     case "wall":
                         objects.append({"type": "wall", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "color": [0xc2, 0xc2, 0xc2]})
+                        print("[placed {}]".format(objects[-1]))
             if event.button == 3: #right click
                 if player is not None:
                     if pygame.Rect(player.x, player.y, 8, 16).collidepoint(mouse):
                         player = None
+                        print("[player removed!]")
                 for i in objects:
                     if pygame.Rect(i["pos"][0], i["pos"][1], i["width"], i["height"]).collidepoint(mouse):
                         objects.remove(i)
+                        print("[removed {}]".format(i))
 
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             for k, v in barButtons.items():
@@ -246,6 +262,8 @@ while True:
                     print("[selected {}]".format(selectedItem))
 
         ui.process_events(event)
+
+    resizeLevel()
 
     ds.fill([0x22, 0x22, 0x22])
 
@@ -263,10 +281,10 @@ while True:
         pygame.draw.rect(ds, (255, 255, 255), (player.x, player.y, 8, 16))
 
     if grid:
-        for x in range(0, screenSize[0], cell):
+        for x in range(round(camera.x - (camera.x % cell)), round(camera.x) + screenSize[0], cell):
             pygame.draw.line(ds, [0x33, 0x33, 0x33], (x, 0), (x, screenSize[1]))
 
-        for y in range(0, screenSize[1], cell):
+        for y in range(round(camera.y - (camera.y % cell)), round(camera.y) + screenSize[1], cell):
             pygame.draw.line(ds, [0x33, 0x33, 0x33], (0, y), (screenSize[0], y))
 
     sc.fill([0, 0, 0])
@@ -275,5 +293,8 @@ while True:
     pygame.draw.rect(sc, [0x11, 0x11, 0x11], (0, 0, screenSize[0], 42))
     ui.update(dt)
     ui.draw_ui(sc)
+
+    coord = font.render("{}".format(selPos), True, [255, 255, 255])
+    sc.blit(coord, [2, screenSize[1] - (font.get_point_size() + 5)])
 
     pygame.display.update((0, 0, screenSize[0], screenSize[1]))
