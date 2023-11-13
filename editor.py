@@ -276,6 +276,7 @@ while True:
         match o["type"]:
             case "wall":
                 pygame.draw.rect(ds, o["color"], (o["pos"][0], o["pos"][1], o["width"], o["height"]))
+                if grid: pygame.draw.rect(ds, [0, 0, 0], (o["pos"][0], o["pos"][1], o["width"], o["height"]), round(cell * 0.5))
 
     if player is not None:
         pygame.draw.rect(ds, (255, 255, 255), (player.x, player.y, 8, 16))
