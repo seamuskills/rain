@@ -1,5 +1,7 @@
 # this will be a level editor
-import pygame, pygame_gui
+import string
+
+import pygame, pygame_gui, tkinter, tkinter.filedialog, json
 
 pygame.init()
 
@@ -8,8 +10,125 @@ sc = pygame.display.set_mode(screenSize, flags=pygame.DOUBLEBUF | pygame.RESIZAB
 ds = pygame.Surface(screenSize)
 c = pygame.time.Clock()
 
+#controls
+# e to export
+# n for new
+# o for open
+# wasd for camera
+# arrow keys to wall size
+# , . for grid size
+# left click place
+# right click delete
+# c to configure
+# g toggle grid
+
+properties = {
+    "size": list(screenSize)
+}
+levelPath = None
 grid = True
 cell = 8
+
+def openPath():
+    global levelPath
+    global player
+    global objects
+    global properties
+    top = tkinter.Tk()
+    top.withdraw()
+    file = tkinter.filedialog.askopenfilename(parent=top)
+    top.destroy()
+    with open(file, "r") as f:
+        data = json.loads(f.read())
+    for i in data["level"]:
+        if i["type"] == "player":
+            player = pygame.Vector2(i["pos"])
+            data["level"].remove(i)
+            break
+    objects = data["level"]
+    properties = data["properties"]
+    levelPath = file
+    print("[loaded {}]".format(levelPath))
+    return [file, objects]
+
+def savePath():
+    global levelPath
+    if levelPath is None:
+        createPath()
+
+    if levelPath == "":
+        print("[Level save failed. No path.]")
+        return -1
+
+    data = exp()
+    if data == -1:
+        print("[Level save failed. No player!]")
+        return -1
+
+    with open(levelPath, "w") as f:
+        f.write(json.dumps(data))
+    print("[saved file {}]".format(levelPath))
+    return 1
+
+def createPath():
+    global levelPath
+    top = tkinter.Tk()
+    top.withdraw()
+    file = tkinter.filedialog.asksaveasfilename()
+    top.destroy()
+    levelPath = file
+    return file
+
+configDone = False
+def config():
+    global properties
+    global configDone
+    configDone = False
+    top = tkinter.Tk()
+
+    widthCallback = top.register(setWidth)
+    heightCallback = top.register(setHeight)
+
+    top.geometry('256x128')
+    top.title("level properties")
+
+    wText = tkinter.Label(text="width: ")
+    wText.pack()
+
+    widthBox = tkinter.Entry(validate="all", validatecommand=(widthCallback,"%P"))
+    widthBox.pack()
+
+    hText = tkinter.Label(text="height: ")
+    hText.pack()
+
+    heightBox = tkinter.Entry(top, validatecommand=(heightCallback,"%P"), validate="all")
+    heightBox.pack()
+
+    done = tkinter.Button(top, text="done", command=top.destroy)
+    done.pack()
+
+    top.mainloop()
+    print("[properties set: {}]".format(properties))
+
+def setWidth(P):
+    global properties
+    if str.isdigit(P) or P == "":
+        if P == "":
+            P = 0
+        properties["size"][0] = round(float(P))
+        return True
+    else:
+        return False
+
+def setHeight(P):
+    global properties
+    if str.isdigit(P) or P == "":
+        if P == "":
+            P = 0
+        properties["size"][1] = round(float(P))
+        return True
+    else:
+        return False
 
 ui = pygame_gui.UIManager(screenSize)
 
@@ -30,6 +149,17 @@ barButtons = {
 
 objects = []
 
+def exp(): #export the level
+    data = {"level": []} #data to be entered into json file
+    if player is None:
+        return -1 #no player, invalid level
+    else:
+        data["level"].append({"type": "player", "pos": [player.x, player.y]}) #add player object
+    for i in objects: #add all other objects
+        data["level"].append(i)
+    data["properties"] = properties
+    return data #return finished data
+
 while True:
     dt = c.tick(60) / 1000
     for event in pygame.event.get():
@@ -41,12 +171,20 @@ while True:
             screenSize = ds.get_size()
 
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_e:
+                savePath()
             if event.key == pygame.K_PERIOD:
                 cell *= 2
                 pygame.event.post(pygame.event.Event(pygame.MOUSEMOTION))
             elif event.key == pygame.K_COMMA:
                 cell = max(cell // 2, 4)
                 pygame.event.post(pygame.event.Event(pygame.MOUSEMOTION))
+            elif event.key == pygame.K_o:
+                levelPath = openPath()
+            elif event.key == pygame.K_n:
+                levelPath = createPath()
+            elif event.key == pygame.K_c:
+                config()
 
             if selectedItem != "player":
                 if event.key == pygame.K_UP:
@@ -86,6 +224,7 @@ while True:
             selPos[1] -= selPos[1] % cell
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse = pygame.Vector2(pygame.mouse.get_pos()) + camera
             if event.button == 1 and pygame.mouse.get_pos()[1] > 41: #left click
                 match selectedItem:
                     case "player":
@@ -93,13 +232,18 @@ while True:
                     case "wall":
                         objects.append({"type": "wall", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "color": [0xc2, 0xc2, 0xc2]})
             if event.button == 3: #right click
-                pass
+                if player is not None:
+                    if pygame.Rect(player.x, player.y, 8, 16).collidepoint(mouse):
+                        player = None
+                for i in objects:
+                    if pygame.Rect(i["pos"][0], i["pos"][1], i["width"], i["height"]).collidepoint(mouse):
+                        objects.remove(i)
 
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             for k, v in barButtons.items():
                 if event.ui_element == v:
                     selectedItem = k
-                    print(selectedItem)
+                    print("[selected {}]".format(selectedItem))
 
         ui.process_events(event)
 
@@ -128,7 +272,8 @@ while True:
     sc.fill([0, 0, 0])
     sc.blit(ds, -camera)
 
+    pygame.draw.rect(sc, [0x11, 0x11, 0x11], (0, 0, screenSize[0], 42))
     ui.update(dt)
     ui.draw_ui(sc)
 
-    pygame.display.update()
+    pygame.display.update((0, 0, screenSize[0], screenSize[1]))
