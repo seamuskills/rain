@@ -144,11 +144,21 @@ player = None
 selProperties = {
     "width": 1,
     "height": 1,
+    "target": "player",
+    "rainSettings":{
+        "partsPerDrop": 2,
+        "ticksPerDrop": 5,
+        "angle": 285,
+        "dropSpeed": 10,
+        "life": 80
+    }
 }
 
 barButtons = {
     "player": pygame_gui.elements.UIButton(pygame.Rect(0, 0, 40, 40), "P", ui),
-    "wall": pygame_gui.elements.UIButton(pygame.Rect(41, 0, 40, 40), "W", ui)
+    "wall": pygame_gui.elements.UIButton(pygame.Rect(41, 0, 40, 40), "W", ui),
+    "camTrigger": pygame_gui.elements.UIButton(pygame.Rect(82, 0, 40, 40), "C"),
+    "rainTrigger": pygame_gui.elements.UIButton(pygame.Rect(123, 0, 40, 40), "R")
 }
 
 objects = []
@@ -244,6 +254,12 @@ while True:
                         print("[placed player at {}]".format(str(player)))
                     case "wall":
                         objects.append({"type": "wall", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "color": [0xc2, 0xc2, 0xc2]})
+                        print("[placed {}]".format(objects[-1]))
+                    case "camTrigger":
+                        objects.append({"type": "camTrigger", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "target": selProperties["target"]})
+                        print("[placed {}]".format(objects[-1]))
+                    case "rainTrigger":
+                        objects.append({"type": "rainTrigger", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "rainSettings": selProperties["rainSettings"]})
                         print("[placed {}]".format(objects[-1]))
             if event.button == 3: #right click
                 if player is not None:
