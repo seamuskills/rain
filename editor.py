@@ -92,27 +92,122 @@ def config():
     widthCallback = top.register(setWidth)
     heightCallback = top.register(setHeight)
 
-    top.geometry('256x128')
+    top.geometry('512x512')
     top.title("level properties")
 
-    wText = tkinter.Label(text="width: ")
-    wText.pack()
+    tkinter.Label(text="width: ").pack()
 
-    widthBox = tkinter.Entry(validate="all", validatecommand=(widthCallback,"%P"))
-    widthBox.pack()
+    widthEntry = tkinter.Entry(validate="all", validatecommand=(widthCallback,"%P"))
+    widthEntry.insert(0, str(screenSize[0]))
+    widthEntry.pack()
 
-    hText = tkinter.Label(text="height: ")
-    hText.pack()
+    tkinter.Label(text="height: ").pack()
 
-    heightBox = tkinter.Entry(top, validatecommand=(heightCallback,"%P"), validate="all")
-    heightBox.pack()
+    heightEntry = tkinter.Entry(top, validatecommand=(heightCallback, "%P"), validate="all")
+    heightEntry.insert(0, str(screenSize[1]))
+    heightEntry.pack()
+
+    tkinter.Label(text="object specific properties: ").pack()
+    match selectedItem:
+        case "player":
+            tkinter.Label(text="The player has no properties to edit.").pack()
+        case "wall":
+            def color(P):
+                if len(P) == 0 or list(P)[-1] in [",", " "]:
+                    return True
+                c = P.replace(" ", "").split(",")
+                for i in c:
+                    index = c.index(i)
+                    if not str.isdigit(i):
+                        return False
+                    c[index] = float(c[index])
+                if len(c) == 3:
+                    selProperties["color"] = c
+                if len(c) == 1:
+                    selProperties["color"] = [c[0], c[0], c[0]]
+                return True
+            cCallback = top.register(color)
+            tkinter.Label(text="color: ").pack()
+            colorEntry = tkinter.Entry(top, validatecommand=(cCallback, "%P"), validate="all")
+            colorEntry.insert(0, ", ".join(str(x) for x in selProperties["color"]))
+            colorEntry.pack()
+        case "camTrigger":
+            def targetValid(P):
+                followPlayer.set(False)
+                c = P.split(",")
+                if len(c) > 2:
+                    return False
+                if len(P) == 0 or list(P)[-1] in [" ", ",", "-"]:
+                    return True
+                try:
+                    for i in range(len(c)):
+                        c[i] = float(c[i])
+                except:
+                    return False
+                selProperties["target"] = c
+                return True
+
+            followPlayer = tkinter.BooleanVar()
+
+            def boolVal():
+                selProperties["target"] = "player"
+            boolfunc = top.register(boolVal)
+            validCoord = top.register(targetValid)
+            tkinter.Label(text="Target: ").pack()
+            targetEntry = tkinter.Entry(top, validatecommand=(validCoord, "%P"), validate="all")
+            if selProperties["target"] != "player":
+                targetEntry.insert(0, ", ".join(str(x) for x in selProperties["target"]))
+            targetEntry.pack()
+            checkbox = tkinter.Checkbutton(text="follow player", variable=followPlayer, command=boolfunc)
+            followPlayer.set(selProperties["target"] == "player")
+            checkbox.pack()
+        case "rainTrigger":
+            """
+            rainSettings = {
+                "partsPerDrop": 2,
+                "ticksPerDrop": 5,
+                "angle": 285,
+                "dropSpeed": 10,
+                "life": 80
+            }"""
+            def validateProperty(P, property):
+                if not str.isdigit(P):
+                    return False
+                selProperties["rainSettings"][property] = int(P)
+                return True
+            validateCommand = top.register(validateProperty)
+
+            tkinter.Label(text="particles per drop: ").pack()
+            ppdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "partsPerDrop"))
+            ppdEntry.insert(0, selProperties["rainSettings"]["partsPerDrop"])
+            ppdEntry.pack()
+
+            tkinter.Label(text="ticks between drops").pack()
+            tpdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "ticksPerDrop"))
+            tpdEntry.insert(0, selProperties["rainSettings"]["ticksPerDrop"])
+            tpdEntry.pack()
+
+            tkinter.Label(text="angle of rain").pack()
+            angleEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "angle"))
+            angleEntry.insert(0, selProperties["rainSettings"]["angle"])
+            angleEntry.pack()
+
+            tkinter.Label(text="rain drop speed").pack()
+            spEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "dropSpeed"))
+            spEntry.insert(0, selProperties["rainSettings"]["dropSpeed"])
+            spEntry.pack()
+
+            tkinter.Label(text="life span of drops (in ticks)").pack()
+            tpdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "life"))
+            tpdEntry.insert(0, selProperties["rainSettings"]["life"])
+            tpdEntry.pack()
 
     done = tkinter.Button(top, text="done", command=top.destroy)
     done.pack()
 
     top.mainloop()
     camera = pygame.Vector2(-8, -50)
-    print("[properties set: {}]".format(properties))
+    print("[config success]\n[global: {}]\n[selection: {}]".format(properties, selProperties))
 
 def setWidth(P):
     global properties
@@ -145,6 +240,7 @@ selProperties = {
     "width": 1,
     "height": 1,
     "target": "player",
+    "color": [0xc2, 0xc2, 0xc2],
     "rainSettings":{
         "partsPerDrop": 2,
         "ticksPerDrop": 5,
@@ -253,7 +349,7 @@ while True:
                         player = pygame.Vector2(selPos[0], selPos[1])
                         print("[placed player at {}]".format(str(player)))
                     case "wall":
-                        objects.append({"type": "wall", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "color": [0xc2, 0xc2, 0xc2]})
+                        objects.append({"type": "wall", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "color": selProperties["color"]})
                         print("[placed {}]".format(objects[-1]))
                     case "camTrigger":
                         objects.append({"type": "camTrigger", "pos": selPos, "width": selProperties["width"] * cell, "height": selProperties["height"] * cell, "target": selProperties["target"]})
@@ -293,6 +389,10 @@ while True:
             case "wall":
                 pygame.draw.rect(ds, o["color"], (o["pos"][0], o["pos"][1], o["width"], o["height"]))
                 if grid: pygame.draw.rect(ds, [0, 0, 0], (o["pos"][0], o["pos"][1], o["width"], o["height"]), round(cell * 0.5))
+            case "camTrigger":
+                pygame.draw.rect(ds, [255, 51, 51], (o["pos"][0], o["pos"][1], o["width"], o["height"]), round(cell / 2))
+            case "rainTrigger":
+                pygame.draw.rect(ds, [102, 51, 255], (o["pos"][0], o["pos"][1], o["width"], o["height"]), round(cell / 2))
 
     if player is not None:
         pygame.draw.rect(ds, (255, 255, 255), (player.x, player.y, 8, 16))
