@@ -39,6 +39,8 @@ def sign(x):
     return 0
 
 camera = pygame.Vector2(0, 0)
+camTarget = [0, 0]
+camTargetPlayer = True
 
 parts = [] #all particles
 class Drop: #raindrop
@@ -114,6 +116,53 @@ class Static(Solid): # the most basic static object
 
     def collideRect(self, rect): #same reason for existing as collidePoint
         return self.rect.colliderect(rect)
+
+class CamTrigger:
+    def __init__(self, x, y, w, h, target):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.target = target
+        statics.append(self)
+
+    def collidePoint(self, x, y): #this is needed just incase the shape is not a rect, in which case I can add conditions to rectify the collision detection
+        return self.rect.collidepoint(x, y)
+
+    def collideRect(self, rect): #same reason for existing as collidePoint
+        return self.rect.colliderect(rect)
+
+    def draw(self):
+        global camTargetPlayer
+        global camTarget
+        global player
+        global debug
+        if debug:
+            pygame.draw.rect(sc, [255, 0, 0], [self.rect.x - camera.x, self.rect.y - camera.y, self.rect.w, self.rect.h], 2)
+
+        if player.collideRect(self.rect):
+            if self.target == "player":
+                camTargetPlayer = True
+            else:
+                camTargetPlayer = False
+                camTarget = self.target
+
+class RainTrigger:
+    def __init__(self, x, y, w, h, settings):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.settings = settings
+
+    def collidePoint(self, x, y): #this is needed just incase the shape is not a rect, in which case I can add conditions to rectify the collision detection
+        return self.rect.collidepoint(x, y)
+
+    def collideRect(self, rect): #same reason for existing as collidePoint
+        return self.rect.colliderect(rect)
+    def draw(self):
+        global debug
+        global player
+        global rainSettings
+        if debug:
+            pygame.draw.rect(sc, [0, 255, 0],[self.rect.x - camera.x, self.rect.y - camera.y, self.rect.w, self.rect.h], 2)
+
+        if player.collideRect(self.rect):
+            rainSettings = self.settings
 
 class Player(Solid):
     def __init__(self, x, y):
@@ -204,14 +253,18 @@ while True:
         i.draw()
 
     for i in statics:
-        i.draw()
+        if i.collideRect(camera.x, camera.y, screenSize[0], screenSize[1]):
+            i.draw()
 
     player.update()
     player.draw()
 
-    cameraDist = pygame.Vector2(player.rect.x, player.rect.y).distance_to(camera)
-    camera.x = approach(camera.x, player.rect.x - (screenSize[0] / 2), 0.25 * cameraDist)
-    camera.y = approach(camera.y, player.rect.y - (screenSize[1] / 2), 0.005 * cameraDist)
+    if camTargetPlayer:
+        camTarget = [player.rect.x, player.rect.y]
+
+    cameraDist = pygame.Vector2(camTarget) - camera
+    camera.x = approach(camera.x, camTarget[0] - (screenSize[0] / 2), 0.25 * cameraDist.x)
+    camera.y = approach(camera.y, camTarget[1] - (screenSize[1] / 2), 0.25 * cameraDist.y)
 
     pygame.display.update()
     c.tick(60)
