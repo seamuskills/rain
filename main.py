@@ -253,7 +253,7 @@ while True:
         i.draw()
 
     for i in statics:
-        if i.collideRect(camera.x, camera.y, screenSize[0], screenSize[1]):
+        if i.collideRect(pygame.Rect(camera.x, camera.y, screenSize[0], screenSize[1])):
             i.draw()
 
     player.update()
