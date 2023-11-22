@@ -298,7 +298,7 @@ while True:
                 cell = max(cell // 2, 4)
                 pygame.event.post(pygame.event.Event(pygame.MOUSEMOTION))
             elif event.key == pygame.K_o:
-                levelPath = openPath()
+                levelPath = openPath()[0]
             elif event.key == pygame.K_n:
                 levelPath = createPath()
             elif event.key == pygame.K_c:
@@ -399,10 +399,10 @@ while True:
 
     if grid:
         for x in range(round(camera.x - (camera.x % cell)), round(camera.x) + screenSize[0], cell):
-            pygame.draw.line(ds, [0x33, 0x33, 0x33], (x, 0), (x, screenSize[1]))
+            pygame.draw.line(ds, [0x33, 0x33, 0x33], (x, round(camera.y)), (x, round(camera.y) + screenSize[1]))
 
         for y in range(round(camera.y - (camera.y % cell)), round(camera.y) + screenSize[1], cell):
-            pygame.draw.line(ds, [0x33, 0x33, 0x33], (0, y), (screenSize[0], y))
+            pygame.draw.line(ds, [0x33, 0x33, 0x33], (round(camera.x), y), (round(camera.x) + screenSize[0], y))
 
     sc.fill([0, 0, 0])
     sc.blit(ds, -camera)
