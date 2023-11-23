@@ -1,6 +1,12 @@
-import pygame, math, random, sys
+import pygame, math, random, sys, json
 
 debug = "debug" in sys.argv
+
+if "-level" in sys.argv:
+    if sys.argv.index("-level") != len(sys.argv):
+        level = sys.argv[sys.argv.index("-level") + 1]
+else:
+    level = "test.lev"
 
 screenSize = [1080, 720]
 
@@ -148,6 +154,7 @@ class RainTrigger:
     def __init__(self, x, y, w, h, settings):
         self.rect = pygame.Rect(x, y, w, h)
         self.settings = settings
+        statics.append(self)
 
     def collidePoint(self, x, y): #this is needed just incase the shape is not a rect, in which case I can add conditions to rectify the collision detection
         return self.rect.collidepoint(x, y)
@@ -231,8 +238,30 @@ class Player(Solid):
         if debug: pygame.draw.rect(sc, [255,255,255], [self.rect.x - camera.x, self.rect.y - camera.y, self.rect.w, self.rect.h])
 
 
-Static(0, 710, 720, 10, [0xc2, 0xc2, 0xc2])
-player = Player(100, 96)
+def loadMap(data):
+    global player
+    global statics
+    global solids
+    global parts
+    parts = []
+    statics = []
+    solids = []
+    parts = []
+    for i in data["level"]:
+        match i["type"]:
+            case "wall":
+                Static(i["pos"][0] * 2, i["pos"][1] * 2, i["width"] * 2, i["height"] * 2, color=i["color"])
+            case "player":
+                player = Player(i["pos"][0] * 2, i["pos"][1] * 2)
+            case "camTrigger":
+                CamTrigger(i["pos"][0] * 2, i["pos"][1] * 2, i["width"] * 2, i["height"] * 2, i["target"])
+            case "rainTrigger":
+                RainTrigger(i["pos"][0] * 2, i["pos"][1] * 2, i["width"] * 2, i["height"] * 2, i["rainSettings"])
+        if debug:
+            print("placed {}".format(i["type"]))
+
+with open(level, "r") as f:
+    loadMap(json.loads(f.read()))
 
 while True:
     keys = pygame.key.get_pressed()

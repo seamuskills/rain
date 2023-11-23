@@ -1,0 +1,1 @@
+{"level": [{"type": "player", "pos": [56.0, 168.0]}, {"type": "wall", "pos": [56.0, 184.0], "width": 112, "height": 16, "color": [194, 194, 194]}, {"type": "camTrigger", "pos": [72.0, 160.0], "width": 40, "height": 24, "target": [104.0, 160.0]}, {"type": "wall", "pos": [168.0, 184.0], "width": 80, "height": 16, "color": [101.0, 25.0, 101.0]}], "properties": {"size": [540, 400]}}
