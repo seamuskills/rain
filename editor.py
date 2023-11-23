@@ -174,31 +174,32 @@ def config():
                 if not str.isdigit(P):
                     return False
                 selProperties["rainSettings"][property] = int(P)
+                print(int(P))
                 return True
             validateCommand = top.register(validateProperty)
 
             tkinter.Label(text="particles per drop: ").pack()
-            ppdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "partsPerDrop"))
+            ppdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "partsPerDrop"), validate="all")
             ppdEntry.insert(0, selProperties["rainSettings"]["partsPerDrop"])
             ppdEntry.pack()
 
             tkinter.Label(text="ticks between drops").pack()
-            tpdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "ticksPerDrop"))
+            tpdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "ticksPerDrop"), validate="all")
             tpdEntry.insert(0, selProperties["rainSettings"]["ticksPerDrop"])
             tpdEntry.pack()
 
             tkinter.Label(text="angle of rain").pack()
-            angleEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "angle"))
+            angleEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "angle"), validate="all")
             angleEntry.insert(0, selProperties["rainSettings"]["angle"])
             angleEntry.pack()
 
             tkinter.Label(text="rain drop speed").pack()
-            spEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "dropSpeed"))
+            spEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "dropSpeed"), validate="all")
             spEntry.insert(0, selProperties["rainSettings"]["dropSpeed"])
             spEntry.pack()
 
             tkinter.Label(text="life span of drops (in ticks)").pack()
-            tpdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "life"))
+            tpdEntry = tkinter.Entry(top, validatecommand=(validateCommand, "%P", "life"), validate="all")
             tpdEntry.insert(0, selProperties["rainSettings"]["life"])
             tpdEntry.pack()
 
